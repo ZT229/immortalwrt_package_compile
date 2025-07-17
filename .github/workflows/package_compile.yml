@@ -91,14 +91,14 @@ jobs:
 
     # 第十一步: 设置 tag
     - name: 设置构建 tag
-      run: echo "RELEASE_TAG=build-$(date +'%Y%m%d')" >> $GITHUB_ENV    
+      run: echo "RELEASE_TAG=$(date +'%Y%m%d')" >> $GITHUB_ENV    
 
     # 第十二步：上传到 Release（使用日期 tag）
     - name: 发布 Release
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ env.RELEASE_TAG }}
-        name: 自动构建 - ${{ env.RELEASE_TAG }}
-        files: ${{ env.SDK_DIR }}/output/*.ipk
+        name: ${{ env.RELEASE_TAG }}
+        files: ./output/*.ipk
       env:
         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
