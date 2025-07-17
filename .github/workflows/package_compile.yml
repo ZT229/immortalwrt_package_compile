@@ -96,5 +96,3 @@ jobs:
         tag_name: ${{ github.run_id }}-$(date +'%Y%m%d')
         name: 自动构建 ${{ github.run_id }} - $(date +'%Y-%m-%d')
         files: ./output/*.ipk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
