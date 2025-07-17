@@ -1,0 +1,100 @@
+name: Package Compile
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # 每天中午 12:00（北京时间）
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 第一步：拉取仓库代码
+    - name: 拉取仓库代码
+      uses: actions/checkout@v4
+
+    # 第二步：安装构建依赖
+    - name: 安装构建依赖
+      run: |
+        sudo apt update
+        sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
+          bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
+          g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
+          libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev \
+          libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano \
+          ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils \
+          python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs \
+          upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd npm nodejs golang python-is-python3
+
+    # 第三步：下载并解压 ImmortalWrt SDK
+    - name: 下载并解压 SDK
+      run: |
+        curl -LO https://downloads.immortalwrt.org/releases/24.10.2/targets/mediatek/filogic/immortalwrt-sdk-24.10.2-mediatek-filogic_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+        zstd -d immortalwrt-sdk-*.tar.zst
+        tar -xf immortalwrt-sdk-*.tar
+        rm -f immortalwrt-sdk-*.tar
+        echo "SDK_DIR=$(find . -maxdepth 1 -type d -name 'immortalwrt-sdk-*')" >> $GITHUB_ENV
+
+    # 第四步：复制 .config 到 SDK 根目录
+    - name: 复制配置文件
+      run: cp .config "$SDK_DIR/.config"
+
+    # 第五步：修改 feeds.conf.default（去除 commit hash）
+    - name: 修改 feeds.conf.default
+      working-directory: ${{ env.SDK_DIR }}
+      run: sed -i 's/\^.*//g' feeds.conf.default
+
+    # 第六步：拉取 feeds
+    - name: 拉取 Feeds
+      working-directory: ${{ env.SDK_DIR }}
+      run: ./scripts/feeds update -a
+
+    # 第七步：替换 OpenClash 数据文件和核心
+    - name: 替换 OpenClash 数据
+      working-directory: ${{ env.SDK_DIR }}/feeds/luci/applications/luci-app-openclash/root/etc/openclash
+      run: |
+        rm -f Country.mmdb GeoSite.dat
+        curl -sL -o Country.mmdb https://github.com/alecthw/mmdb_china_ip_list/raw/release/Country.mmdb && echo "Country.mmdb done!"
+        curl -sL -o GeoSite.dat https://github.com/Loyalsoldier/v2ray-rules-dat/raw/release/geosite.dat && echo "GeoSite.dat done!"
+        curl -sL -o GeoIP.dat https://github.com/Loyalsoldier/v2ray-rules-dat/raw/release/geoip.dat && echo "GeoIP.dat done!"
+        curl -sL -o ASN.mmdb https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb && echo "ASN.mmdb done!"
+
+        mkdir -p ./core/ && cd ./core/
+        curl -sL -o meta.tar.gz https://github.com/vernesong/OpenClash/raw/core/dev/meta/clash-linux-arm64.tar.gz
+        tar -zxf meta.tar.gz
+        mv -f clash clash_meta
+        chmod +x clash_meta
+        rm -f *.tar.gz
+
+    # 第八步：安装 feeds
+    - name: 安装 Feeds
+      working-directory: ${{ env.SDK_DIR }}
+      run: ./scripts/feeds install -a
+
+    # 第九步：编译 luci-app-openclash 和 v2ray-geodata
+    - name: 编译 OpenClash 及 geodata
+      working-directory: ${{ env.SDK_DIR }}
+      run: |
+        make defconfig
+        make -j$(nproc) package/feeds/luci/luci-app-openclash/compile V=s
+        make -j$(nproc) package/feeds/packages/v2ray-geodata/compile V=s
+
+    # 第十步：收集 IPK 软件包（排除 geosite-ir）
+    - name: 收集 IPK
+      working-directory: ${{ env.SDK_DIR }}
+      run: |
+        mkdir -p ../output
+        find bin/packages/ -type f -name "*openclash*.ipk" -exec cp {} ../output/ \;
+        find bin/packages/ -type f -name "*v2ray-geoip*.ipk" ! -name "*-ir*" -exec cp {} ../output/ \;
+        find bin/packages/ -type f -name "*v2ray-geosite*.ipk" ! -name "*-ir*" -exec cp {} ../output/ \;
+
+    # 第十一步：上传到 Release（使用日期 tag）
+    - name: 发布 Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.run_id }}-$(date +'%Y%m%d')
+        name: 自动构建 ${{ github.run_id }} - $(date +'%Y-%m-%d')
+        files: ./output/*.ipk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
