@@ -89,12 +89,16 @@ jobs:
         find bin/packages/ -type f -name "*v2ray-geoip*.ipk" ! -name "*-ir*" -exec cp {} ../output/ \;
         find bin/packages/ -type f -name "*v2ray-geosite*.ipk" ! -name "*-ir*" -exec cp {} ../output/ \;
 
-    # 第十一步：上传到 Release（使用日期 tag）
+    # 第十一步: 设置 tag
+    - name: 设置构建 tag
+      run: echo "RELEASE_TAG=build-$(date +'%Y%m%d')" >> $GITHUB_ENV    
+
+    # 第十二步：上传到 Release（使用日期 tag）
     - name: 发布 Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.run_id }}-$(date +'%Y%m%d')
-        name: 自动构建 ${{ github.run_id }} - $(date +'%Y-%m-%d')
-        files: ./output/*.ipk
+        tag_name: ${{ env.RELEASE_TAG }}
+        name: 自动构建 - ${{ env.RELEASE_TAG }}
+        files: ${{ env.SDK_DIR }}/output/*.ipk
       env:
         GITHUB_TOKEN: ${{ secrets.GH_PAT }}
