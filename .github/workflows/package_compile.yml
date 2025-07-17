@@ -77,8 +77,8 @@ jobs:
       working-directory: ${{ env.SDK_DIR }}
       run: |
         make defconfig
-        make -j$(nproc) package/feeds/luci/luci-app-openclash/compile V=s
-        make -j$(nproc) package/feeds/packages/v2ray-geodata/compile V=s
+        make -j16 package/feeds/luci/luci-app-openclash/compile
+        make -j16 package/feeds/packages/v2ray-geodata/compile
 
     # 第十步：收集 IPK 软件包（排除 geosite-ir）
     - name: 收集 IPK
@@ -96,3 +96,5 @@ jobs:
         tag_name: ${{ github.run_id }}-$(date +'%Y%m%d')
         name: 自动构建 ${{ github.run_id }} - $(date +'%Y-%m-%d')
         files: ./output/*.ipk
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_PAT }}
