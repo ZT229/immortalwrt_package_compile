@@ -1,9 +1,9 @@
 name: Package Compile
 
-on:
-  schedule:
-    - cron: '0 4 * * *' # 每天中午 12:00（北京时间）
-  workflow_dispatch:
+ #on:
+ #schedule:
+ # - cron: '0 4 * * *' # 每天中午 12:00（北京时间）
+ #workflow_dispatch:
 
 jobs:
   build:
