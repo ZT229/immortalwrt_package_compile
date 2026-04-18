@@ -55,10 +55,10 @@ jobs:
       working-directory: ${{ env.SDK_DIR }}/feeds/luci/applications/luci-app-openclash/root/etc/openclash
       run: |
         rm -f Country.mmdb GeoSite.dat
-        curl -sL -o Country.mmdb https://github.com/alecthw/mmdb_china_ip_list/raw/release/Country.mmdb && echo "Country.mmdb done!"
-        curl -sL -o GeoSite.dat https://github.com/Loyalsoldier/v2ray-rules-dat/raw/release/geosite.dat && echo "GeoSite.dat done!"
-        curl -sL -o GeoIP.dat https://github.com/Loyalsoldier/v2ray-rules-dat/raw/release/geoip.dat && echo "GeoIP.dat done!"
-        curl -sL -o ASN.mmdb https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb && echo "ASN.mmdb done!"
+        curl -sL -o Country.mmdb https://testingcf.jsdelivr.net/gh/alecthw/mmdb_china_ip_list@release/lite/Country.mmdb && echo "Country.mmdb done!"
+        curl -sL -o GeoSite.dat https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat && echo "GeoSite.dat done!"
+        curl -sL -o GeoIP.dat https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat && echo "GeoIP.dat done!"
+        curl -sL -o ASN.mmdb https://testingcf.jsdelivr.net/gh/xishang0128/geoip@release/GeoLite2-ASN.mmdb && echo "ASN.mmdb done!"
 
         mkdir -p ./core/ && cd ./core/
         curl -sL -o meta.tar.gz https://github.com/vernesong/OpenClash/raw/core/dev/meta/clash-linux-arm64.tar.gz
